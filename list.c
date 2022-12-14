@@ -1,7 +1,3 @@
-  // list/list.c
-// 
-// Implementation for linked list.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +36,7 @@ void list_print(list_t *l) {
   }
   while (current != NULL){
     b = current->blk;
-    printf("PID=%d START:%d END:%d", b->pid, b->start, b->end);
+    printf("PID=%d START:%d END:%d \n", b->pid, b->start, b->end);
     current = current->next;
   }
 }
@@ -52,7 +48,7 @@ int list_length(list_t *l) {
     i++;
     current = current->next;
   }
-  
+  printf("list_length finished operatioons\n");
   return i; 
 }
 
@@ -98,108 +94,97 @@ void list_add_at_index(list_t *l, block_t *blk, int index){
   }
 }
 
-void list_add_ascending_by_address(list_t *l, block_t *newblk){
+void list_add_ascending_by_address(list_t *l, block_t *blk){
   node_t *current;
   node_t *prev;
-  node_t *newNode = node_alloc(newblk);
+  node_t *newNode = node_alloc(blk);
 
-  int newBlkStartAddress = newblk->start;
-
-  if (l->head == NULL){
-    l->head = newNode;
-  } else {
-    prev = current = l->head;
-
-    int currentBlkStartAddress = current->blk->start;
-
-    if (current->next == NULL){
-      if (newBlkStartAddress <= currentBlkStartAddress){
-        newNode->next = l->head;
-        l->head = newNode;
-      } else{
-        current->next = newNode;
-        newNode->next = NULL;
-      }
-    } else {
-      if (newBlkStartAddress <= currentBlkStartAddress){
-        newNode->next = l->head;
-        l->head = newNode;
-      }else {
-      while(current != NULL && newBlkStartAddress){
-        prev = current;
-        current = current->next;
- 
-        if (current != NULL){
-          currentBlkStartAddress = current->blk->start;
-        }
-      }
-      prev->next = newNode;
-      newNode->next = current;
-      }
-      }
-    }
-  }
-
-   /*
-   * 1. Insert newblk into list l in ascending order based on the START address of the block.
-   * 
-   *    node_t *c = l.head;
-   *    Insert newblk After Current Node if:   newblk->start > c->start
-   */
-
-void list_add_ascending_by_blocksize(list_t *l, block_t *newblk){
-  node_t *current;
-  node_t *prev;
-  node_t *newNode = node_alloc(newblk);
-  int newblk_size = newblk->end - newblk->start;
-  int curblk_size;
-
+  int newblk_start_address = blk->start;
+  
   if(l->head == NULL){
     l->head = newNode;
-  } else{
+  }
+  else{
     prev = current = l->head;
+    
+    int curblk_start_address = current->blk->start;
 
-    curblk_size = current->blk->end - current->blk->start + 1;
-
-    if (current->next == NULL){
-      if(newblk_size <= curblk_size){
+    if(current->next == NULL) {  //only one node in list
+      if(newblk_start_address <= curblk_start_address) {  // place before current node
         newNode->next = l->head;
         l->head = newNode;
-      } else{
+       }
+      else {   // place after current node
         current->next = newNode;
         newNode->next = NULL;
-      }
-    }else{
-      if(newblk_size <= curblk_size){
+       }
+    }
+    else { // two or more node in list
+      if(newblk_start_address <= curblk_start_address) {  // place after current node
         newNode->next = l->head;
         l->head = newNode;
-      }else {
-        while(current != NULL && newblk_size >= curblk_size){
+      }
+      else {
+        //printf("silly check right\n");
+        while(current != NULL && newblk_start_address >= curblk_start_address) {
           prev = current;
           current = current->next;
-          if (current != NULL){
-            curblk_size = current->blk->end - current->blk->start;
+               
+          if(current != NULL){  // the last one in the list
+            // printf("seeing if this triggers\n");
+             curblk_start_address = current->blk->start;
+          }
           }
           prev->next = newNode;
           newNode->next = current;
         }
-      }
     }
   }
-   /*
-   * 1. Insert newblk into list l in ascending order based on the blocksize.
-   *    blocksize is calculated :  blocksize = end - start +1
-   * 
-   *    Ex:  blocksize = newblk->end - newblk->start
-   * 
-   *         node_t *c = l.head;
-   * 
-   *         curr_blocksize = c->blk->end - c->blk->start +1;
-   * 
-   *         Insert newblk After Current Node if:   blocksize >= curr_blocksize
-   * 
-   *    USE the compareSize()
-   */
+}
+
+void list_add_ascending_by_blocksize(list_t *l, block_t *blk){
+  node_t *current;
+  node_t *prev;
+  node_t *newNode = node_alloc(blk);
+  int newblk_size = blk->end - blk->start;
+  int curblk_size;
+  
+  if(l->head == NULL){
+    l->head = newNode;
+  }
+  else{
+    prev = current = l->head;
+    
+    curblk_size = current->blk->end - current->blk->start + 1;
+
+    if(current->next == NULL) {  //only one node in list
+       if(newblk_size <= curblk_size) {  // place before current node
+          newNode->next = l->head;
+          l->head = newNode;
+       }
+       else {   // place after current node
+          current->next = newNode;
+          newNode->next = NULL;
+       }
+    }
+    else{ //two or more nodes in list
+       if(newblk_size <= curblk_size) {  // place after current node
+          newNode->next = l->head;
+          l->head = newNode;
+       }
+       else {
+          while(current != NULL && newblk_size >= curblk_size) {
+            prev = current;
+            current = current->next;
+               
+            if(current != NULL)  // the last one in the list
+                curblk_size = current->blk->end - current->blk->start;
+          }
+          prev->next = newNode;
+          newNode->next = current;
+        }
+    }
+  }
 }
 
 void list_add_descending_by_blocksize(list_t *l, block_t *blk){
@@ -250,43 +235,32 @@ void list_add_descending_by_blocksize(list_t *l, block_t *blk){
 }
 
 void list_coalese_nodes(list_t *l){ 
+
   node_t *current;
   node_t *prev;
-
   if(l->head == NULL){
     return;
   }
-  
+
   prev = l->head;
   current = prev->next;
 
-  while(current != NULL){
-    if (prev->blk->end + 1 == current->blk->start){
+  while (current != NULL){
+    if (prev->blk->end +1 == current->blk->start){
       prev->blk->end = current->blk->end;
-    } else{
+  
+    }
+    else{
       prev = current;
       current = current->next;
       continue;
-      }
-      prev->next = current->next;
-      free(current);
-      current = prev->next;
     }
+    prev->next = current->next;
+    free(current);
+    current = prev->next;
   }
-  /*
-   * 1. Assuming you have passed in a sorted list of blocks based on addresses in ascending order
-   * 2. While list is not empty,
-   *    a. compare two nodes at a time to see if the prev.END + 1 == current.START, if so, they are physically adjacent
-   *    combine them by setting the prev.END = current.END. 
-   *    b. If not adjacent go to #6
-   * 3. point the prev.NEXT to the current.NEXT to skip over current.
-   * 4. Free current
-   * 5. go back to #2
-   * 6. Advance prev = current, and current = current.NEXT
-   * 7. go back to #2
-   * 
-   * USE the compareSize()
-   */
+ 
+}
 
 block_t* list_remove_from_back(list_t *l){
   block_t *value = NULL;
@@ -479,8 +453,10 @@ bool list_is_in_by_pid(list_t *l, int pid){
    * USE the comparePID()
    * 
    * Look at list_is_in_by_size()
-  Returns the index at which the given block of Size or greater appears. */
+  */
 }
+
+/* Returns the index at which the given block of Size or greater appears. */
 int list_get_index_of_by_Size(list_t *l, int Size){
  int i = 0;
  node_t *current = l->head;
